@@ -1,0 +1,71 @@
+parameters:
+  runner_version: '3.6.5'
+  runner_binary: '/Users/vsts/hostedtoolcache/Python/3.6.5/x64/python'
+  name: 'robot framework test job'
+  vmImage: ''
+
+jobs:
+- job: ${{ parameters.name }}
+  timeoutInMinutes: 60
+  cancelTimeoutInMinutes: 25
+  pool:
+    vmImage: ${{ parameters.vmImage }}
+  strategy:
+    matrix:
+      Python27:
+        runner_version: ${{ parameters.runner_version }}
+        runner_binary:  ${{ parameters.runner_binary }}
+        os_name:  ${{ parameters.name }}
+        python_version: '2.7'
+      Python36:
+        runner_version: ${{ parameters.runner_version }}
+        runner_binary:  ${{ parameters.runner_binary }}
+        os_name:  ${{ parameters.name }}
+        python_version: '3.6'
+      Python37:
+        runner_version: ${{ parameters.runner_version }}
+        runner_binary:  ${{ parameters.runner_binary }}
+        os_name:  ${{ parameters.name }}
+        python_version: '3.7'
+    maxParallel: 3
+
+  steps:
+  - task: UsePythonVersion@0
+    displayName: 'Python for test runner'
+    inputs:
+      versionSpec: $(runner_version)
+      outputVariable: runner_path
+      addToPath: false
+      architecture: 'x64'
+
+  - task: UsePythonVersion@0
+    displayName: 'Python for test execution'
+    inputs:
+      versionSpec: $(python_version)
+      addToPath: true
+      architecture: 'x64'
+
+  - script: |
+      echo %USEPYTHONVERSION_PYTHONLOCATION%
+      echo %PATH%
+      python -m pip install --upgrade pip
+      python -m pip install -r requirements-build.txt
+      python -m pip install -r requirements-ci.txt
+    displayName: 'Install requirements'
+
+  - script: $(runner_binary) atest/run.py python$(python_version) --xunit atest_junit.xml --nostatusrc --exclude no-ci atest/robot/cli
+    displayName: 'Running Acceptance Tests'
+
+  - task: PublishTestResults@2
+    inputs:
+      testRunner: JUnit
+      testResultsFiles: atest/results/Python-$(python_version)-$(os_name)/atest_junit.xml
+      testResultsTitle: Acceptance Test for $(os_name) with Python $(python_version)
+
+  - script: python utest/cirun.py
+    displayName: 'Running Unit Tests'
+
+  - task: PublishTestResults@2
+    inputs:
+      testRunner: JUnit
+      testResultsFiles: utest_junit.xml

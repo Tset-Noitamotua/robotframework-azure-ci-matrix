@@ -1,0 +1,13 @@
+jobs:
+- template: azure/job_template.yml
+  parameters:
+    name: 'OSX'
+    vmImage: 'macOS-10.13'
+    runner_version: '3.6.5'
+    runner_binary: '/Users/vsts/hostedtoolcache/Python/3.6.5/x64/python'
+- template: azure/job_template.yml
+  parameters:
+    name: 'Windows'
+    vmImage: 'VS2017-Win2016'
+    runner_version: '3.6.4'
+    runner_binary: 'C:\hostedtoolcache\windows\Python\3.6.4\x64\python'

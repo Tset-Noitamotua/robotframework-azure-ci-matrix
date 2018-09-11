@@ -3,3 +3,6 @@ invoke >= 0.20
 rellu >= 0.7
 twine
 wheel
+unittest-xml-reporting
+pytest
+unittest2
