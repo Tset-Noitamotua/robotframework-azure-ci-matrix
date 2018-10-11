@@ -58,7 +58,8 @@ class ResultWriter(object):
             self._write_output(results.result, settings.output)
         if settings.xunit:
             self._write_xunit(results.result, settings.xunit,
-                              settings.xunit_skip_noncritical)
+                              settings.xunit_skip_noncritical,
+                              settings.xunit_split_testsuites)
         if settings.log:
             config = dict(settings.log_config,
                           minLevel=results.js_result.min_level)
@@ -72,8 +73,9 @@ class ResultWriter(object):
     def _write_output(self, result, path):
         self._write('Output', result.save, path)
 
-    def _write_xunit(self, result, path, skip_noncritical):
-        self._write('XUnit', XUnitWriter(result, skip_noncritical).write, path)
+    def _write_xunit(self, result, path, skip_noncritical, split_testsuites):
+        self._write('XUnit', XUnitWriter(result, skip_noncritical,
+                    split_testsuites).write, path)
 
     def _write_log(self, js_result, path, config):
         self._write('Log', LogWriter(js_result).write, path, config)

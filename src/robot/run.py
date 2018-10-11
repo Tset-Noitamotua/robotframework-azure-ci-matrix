@@ -174,6 +174,7 @@ Options
  -x --xunit file          xUnit compatible result file. Not created unless this
                           option is specified.
     --xunitskipnoncritical  Mark non-critical tests on xUnit output as skipped.
+    --xunitsplittestsuites  Groups each robot file into a separate testsuite
  -b --debugfile file      Debug file written during execution. Not created
                           unless this option is specified.
  -T --timestampoutputs    When this option is used, timestamp in a format
