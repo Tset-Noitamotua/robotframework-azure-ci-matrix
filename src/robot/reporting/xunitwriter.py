@@ -18,7 +18,6 @@ from __future__ import division
 from robot.result import ResultVisitor
 from robot.utils import XmlWriter
 
-
 class XUnitWriter(object):
 
     def __init__(self, execution_result, skip_noncritical):
@@ -45,6 +44,7 @@ class XUnitFileWriter(ResultVisitor):
     def start_suite(self, suite):
         if self._root_suite:
             return
+
         self._root_suite = suite
         tests, failures, skipped = self._get_stats(suite.statistics)
         attrs = {'name': suite.name,
@@ -53,7 +53,10 @@ class XUnitFileWriter(ResultVisitor):
                  'failures': failures,
                  'skipped': skipped,
                  'time': self._time_as_seconds(suite.elapsedtime)}
-        self._writer.start('testsuite', attrs)
+
+        if suite.parent is None:
+            del attrs['skipped']
+            self._writer.start('testsuites', attrs)
 
     def _get_stats(self, statistics):
         if self._skip_noncritical:
@@ -65,7 +68,9 @@ class XUnitFileWriter(ResultVisitor):
         return str(statistics.all.total), str(failures), str(skipped)
 
     def end_suite(self, suite):
-        if suite is self._root_suite:
+        if suite.parent is None and len(suite.suites) > 0:
+            self._writer.end('testsuites')
+        else:
             self._writer.end('testsuite')
 
     def visit_test(self, test):

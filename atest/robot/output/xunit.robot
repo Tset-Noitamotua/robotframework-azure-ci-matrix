@@ -6,6 +6,7 @@ Suite Setup         Run Tests    -x xunit.xml -l log.html    ${TESTDATA}
 
 *** Variables ***
 ${TESTDATA}         misc/non_ascii.robot
+${MULTIPLE SUITES}  misc/suites
 ${PASS AND FAIL}    misc/pass_and_fail.robot
 ${INVALID}          %{TEMPDIR}${/}ïnvälïd-xünït.xml
 
@@ -24,6 +25,19 @@ File Structure Is Correct
     Length Should Be    ${tests}    8
     ${failures} =    Get XUnit Nodes    testcase/failure
     Length Should Be    ${failures}    4
+
+File Structure Is Correct When suites are split
+    Run Tests    -x xunit.xml --xunitsplittestsuites -l log.html    ${MULTIPLE SUITES}
+    ${root} =    Get XUnit Node
+    Should Be Equal    ${root.tag}    testsuites
+    Suites Stats Should Be    ${root}    11    1
+    ${suites} =    Get XUnit Nodes    testsuite
+    Length Should Be    ${suites}    6
+    ${tests} =    Get XUnit Nodes    testsuite/testcase
+    Length Should Be    ${tests}    6
+    ${failures} =    Get XUnit Nodes    testcase/failure
+    Length Should Be    ${failures}    0
+
 
 Non-ASCII Content
     ${tests} =    Get XUnit Nodes    testcase
@@ -93,3 +107,9 @@ Suite Stats Should Be
     Element Attribute Should Be       ${elem}    skipped     ${skipped}
     Element Attribute Should Match    ${elem}    time        ?.???
     Element Attribute Should Be       ${elem}    errors      0
+
+Suites Stats Should Be
+    [Arguments]    ${elem}    ${tests}    ${failures}
+    Element Attribute Should Be    ${elem}    tests       ${tests}
+    Element Attribute Should Be    ${elem}    failures    ${failures}
+    Element Attribute Should Be    ${elem}    errors      0
