@@ -18,15 +18,16 @@ from __future__ import division
 from robot.result import ResultVisitor
 from robot.utils import XmlWriter
 
-
 class XUnitWriter(object):
 
-    def __init__(self, execution_result, skip_noncritical):
+    def __init__(self, execution_result, skip_noncritical, split_testsuites):
         self._execution_result = execution_result
         self._skip_noncritical = skip_noncritical
+        self._split_testsuites = split_testsuites
 
     def write(self, output):
-        writer = XUnitFileWriter(XmlWriter(output), self._skip_noncritical)
+        writer = XUnitFileWriter(XmlWriter(output), self._skip_noncritical,
+                                 self._split_testsuites)
         self._execution_result.visit(writer)
 
 
@@ -37,14 +38,17 @@ class XUnitFileWriter(ResultVisitor):
     http://marc.info/?l=ant-dev&m=123551933508682
     """
 
-    def __init__(self, xml_writer, skip_noncritical=False):
+    def __init__(self, xml_writer, skip_noncritical=False,
+                 split_testsuites=False):
         self._writer = xml_writer
         self._root_suite = None
         self._skip_noncritical = skip_noncritical
+        self._split_testsuites = split_testsuites
 
     def start_suite(self, suite):
-        if self._root_suite:
+        if self._root_suite and not self._split_testsuites:
             return
+
         self._root_suite = suite
         tests, failures, skipped = self._get_stats(suite.statistics)
         attrs = {'name': suite.name,
@@ -52,7 +56,12 @@ class XUnitFileWriter(ResultVisitor):
                  'errors': '0',
                  'failures': failures,
                  'skipped': skipped}
-        self._writer.start('testsuite', attrs)
+
+        if suite.parent is None and self._split_testsuites:
+            del attrs['skipped']
+            self._writer.start('testsuites', attrs)
+        else:
+            self._writer.start('testsuite', attrs)
 
     def _get_stats(self, statistics):
         if self._skip_noncritical:
@@ -64,7 +73,12 @@ class XUnitFileWriter(ResultVisitor):
         return str(statistics.all.total), str(failures), str(skipped)
 
     def end_suite(self, suite):
-        if suite is self._root_suite:
+        if self._split_testsuites:
+            if suite.parent is None and len(suite.suites)>0:
+                self._writer.end('testsuites')
+            else:
+                self._writer.end('testsuite')
+        elif suite is self._root_suite:
             self._writer.end('testsuite')
 
     def visit_test(self, test):

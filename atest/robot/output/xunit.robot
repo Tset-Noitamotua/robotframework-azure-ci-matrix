@@ -6,6 +6,7 @@ Suite Setup         Run Tests    -x xunit.xml -l log.html    ${TESTDATA}
 
 *** Variables ***
 ${TESTDATA}         misc/non_ascii.robot
+${MULTIPLE SUITES}  misc/suites
 ${PASS AND FAIL}    misc/pass_and_fail.robot
 ${INVALID}          %{TEMPDIR}${/}ïnvälïd-xünït.xml
 
@@ -19,11 +20,24 @@ XUnit File Is Created
 File Structure Is Correct
     ${root} =    Get XUnit Node
     Should Be Equal    ${root.tag}    testsuite
-    Stats Should Be    ${root}    8    4    0
+    Testsuite Stats Should Be    ${root}    8    4    0
     ${tests} =    Get XUnit Nodes    testcase
     Length Should Be    ${tests}    8
     ${failures} =    Get XUnit Nodes    testcase/failure
     Length Should Be    ${failures}    4
+
+File Structure Is Correct When suites are split
+    Run Tests    -x xunit.xml --xunitsplittestsuites -l log.html    ${MULTIPLE SUITES}
+    ${root} =    Get XUnit Node
+    Should Be Equal    ${root.tag}    testsuites
+    Testsuites Stats Should Be    ${root}    11    1
+    ${suites} =    Get XUnit Nodes    testsuite
+    Length Should Be    ${suites}    6
+    ${tests} =    Get XUnit Nodes    testsuite/testcase
+    Length Should Be    ${tests}    6
+    ${failures} =    Get XUnit Nodes    testcase/failure
+    Length Should Be    ${failures}    0
+
 
 Non-ASCII Content
     ${tests} =    Get XUnit Nodes    testcase
@@ -57,14 +71,14 @@ Invalid XUnit File
 Skipping non-critical tests
     Run tests    --xUnit xunit.xml --xUnitSkipNonCritical --NonCritical fail    ${PASS AND FAIL}
     ${root} =    Get XUnit Node  .
-    Stats Should Be    ${root}    2    0    1
+    Testsuite Stats Should Be    ${root}    2    0    1
     ${skipped} =  Get XUnit Node  testcase/skipped
     Should be equal    ${skipped.text}    FAIL: Expected failure
 
 Skipping all tests
     Run tests    --xunit xunit.xml --noncritical force --xunitskip    ${PASS AND FAIL}
     ${root} =    Get XUnit Node    .
-    Stats Should Be    ${root}    2    0    2
+    Testsuite Stats Should Be    ${root}    2    0    2
     ${skipped} =    Get XUnit Nodes    testcase/skipped
     Should be equal    ${skipped[0].text}    PASS
     Should be equal    ${skipped[1].text}    FAIL: Expected failure
@@ -81,9 +95,15 @@ Get XUnit Nodes
     ${nodes} =    Get Elements    ${OUTDIR}/xunit.xml    ${xpath}
     [Return]    ${nodes}
 
-Stats Should Be
+Testsuite Stats Should Be
     [Arguments]    ${elem}    ${tests}    ${failures}    ${skipped}
     Element Attribute Should Be    ${elem}    tests       ${tests}
     Element Attribute Should Be    ${elem}    failures    ${failures}
     Element Attribute Should Be    ${elem}    skipped     ${skipped}
+    Element Attribute Should Be    ${elem}    errors      0
+
+Testsuites Stats Should Be
+    [Arguments]    ${elem}    ${tests}    ${failures}
+    Element Attribute Should Be    ${elem}    tests       ${tests}
+    Element Attribute Should Be    ${elem}    failures    ${failures}
     Element Attribute Should Be    ${elem}    errors      0
